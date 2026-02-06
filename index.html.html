@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>字根打字練習</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; font-family: 'Noto Sans TC', sans-serif; }
+body {
+  margin: 0; width: 100vw; height: 100vh;
+  background: radial-gradient(circle at top, #0f172a, #020617);
+  color: #e5e7eb;
+  display: flex; justify-content: center; align-items: center;
+  overflow: hidden;
+}
+.container {
+  display: flex; gap: 32px;
+  flex-wrap: wrap; justify-content: center; align-items: flex-start;
+  padding: 20px;
+}
+.stage {
+  background: rgba(15,23,42,0.95);
+  border-radius: 24px;
+  padding: 36px 48px;
+  min-width: 520px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  display: flex; flex-direction: column;
+  align-items: center;
+  transition: all 0.3s;
+}
+header { display: flex; gap: 16px; margin-bottom: 16px; }
+select, button {
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+select { background: #1e293b; color: #e5e7eb; }
+button { background: linear-gradient(90deg,#38bdf8,#0ea5e9); color: #020617; font-weight: 700; }
+button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(56,189,248,0.5); }
+
+.roots {
+  display: grid;
+  grid-template-columns: repeat(16, 1fr);
+  grid-auto-rows: 70px;
+  gap: 12px;
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+  justify-items: center;
+  align-items: center;
+}
+.root { opacity: 0.3; transition: all 0.3s; border-radius:8px; padding:4px; }
+.root.active { opacity: 1; color: #38bdf8; text-shadow:0 0 12px #38bdf8; transform: scale(1.3); position: relative; }
+.root.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 3px; background: #38bdf8; animation: blink 1s infinite; }
+.root.done { opacity: 1; color: #4ade80; text-shadow:0 0 10px #4ade80; }
+
+input {
+  font-size: 2rem;
+  padding: 16px 24px;
+  width: 360px; max-width: 90%;
+  display: block; margin: 0 auto;
+  text-align: center;
+  border-radius: 20px; border: 2px solid #38bdf8;
+  outline: none;
+  background: #0f172a; color: #f0f9ff;
+  transition: all 0.3s;
+}
+input::placeholder { color: #94a3b8; opacity: 1; }
+input:focus { box-shadow:0 0 15px #38bdf8; border-color:#60a5fa; }
+input.error { animation: shake 0.15s; border-color:#dc2626; box-shadow:0 0 10px #dc2626; }
+@keyframes shake { 0%{transform:translateX(0);}25%{transform:translateX(-5px);}50%{transform:translateX(5px);}75%{transform:translateX(-5px);}100%{transform:translateX(0);} }
+
+.info { margin-top:12px; font-size:1.1rem; display:flex; gap:20px; flex-wrap:wrap; justify-content:center; }
+.info span { font-weight:700; color:#38bdf8; }
+
+.tips { width:280px; background: rgba(30,41,59,0.85); border-radius:20px; padding:24px; box-shadow:0 12px 40px rgba(0,0,0,0.5); }
+.tips h3 { margin-top:0; color:#7dd3fc; }
+.tips li { margin-bottom:12px; line-height:1.5; }
+
+@media(max-width:1200px){ .roots { grid-template-columns: repeat(8, 1fr); } }
+@media(max-width:800px){ .roots { grid-template-columns: repeat(4, 1fr); } .stage{ min-width:320px; } .tips{ width:90%; } }
+
+.confetti { pointer-events:none; position:fixed; top:0; left:0; width:100%; height:100%; overflow:hidden; z-index:9999; }
+
+.stats-panel {
+  width:360px; max-width:90%;
+  margin-top:16px;
+  background: rgba(30,41,59,0.85);
+  border-radius:16px;
+  padding:12px 20px;
+  font-size:1rem;
+  color:#f0f9ff;
+  display:flex; justify-content:space-between;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.progress-container {
+  width:360px; max-width:90%;
+  background:#1e293b;
+  border-radius:12px;
+  height:16px;
+  margin-top:12px;
+  overflow:hidden;
+}
+.progress-bar {
+  height:100%;
+  width:0%;
+  background: linear-gradient(90deg,#38bdf8,#0ea5e9);
+  border-radius:12px;
+  transition: width 0.3s ease;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <div class="stage">
+    <header>
+      <select id="level"></select>
+      <button id="restart">重新開始</button>
+    </header>
+
+    <div id="roots" class="roots"></div>
+
+    <input id="input" placeholder="輸入字根後按空白鍵" autocomplete="off">
+
+    <div class="info">
+      ⏱ 時長：<span id="time">0.0</span> 秒
+      ✅ 正確：<span id="correct">0</span>/<span id="total">0</span>
+    </div>
+
+    <div class="stats-panel">
+      <span>正確率：<span id="accuracy">0%</span></span>
+      <span>平均每字嘗試：<span id="avg">0</span></span>
+      <span>WPM：<span id="wpm">0</span></span>
+    </div>
+
+    <div class="progress-container">
+      <div id="progress-bar" class="progress-bar"></div>
+    </div>
+  </div>
+
+  <aside class="tips">
+    <h3>💡 小 Tips</h3>
+    <ul>
+      <li>請確認切換至<br><b>中文速成輸入法</b></li>
+      <li>輸入後需按<br><b>空白鍵</b></li>
+      <li>完成後<br>🙋 請舉手示意老師</li>
+    </ul>
+  </aside>
+
+</div>
+
+<canvas id="confetti" class="confetti"></canvas>
+
+<script>
+/* ===== 音效 ===== */
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playTone(freq,dur,type,vol){
+  const o=audioCtx.createOscillator();
+  const g=audioCtx.createGain();
+  o.type=type; o.frequency.value=freq; g.gain.value=vol;
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime+dur);
+}
+const soundCorrect = ()=>playTone(880,.12,"triangle",.1);
+const soundWrong = ()=>playTone(220,.15,"square",.08);
+
+/* ===== 字根設定 ===== */
+const levels={
+  "1. 哲理類":["日","月","金","木","水","火","土"],
+  "2. 筆劃類":["竹","戈","十","大","中","一","弓"],
+  "3. 人體類":["人","心","手","口"],
+  "4. 字形類":["尸","廿","山","女","田","卜"],
+  "5. 混合主題":["日","月","金","木","水","火","土","竹","戈","十","大","中","一","弓","人","心","手","口","尸","廿","山","女","田","卜","難"]
+};
+
+/* ===== 工具 ===== */
+function shuffleArray(arr){ return arr.slice().sort(()=>Math.random()-0.5); }
+function buildRoots(base){
+  const r=[];
+  while(r.length<32){
+    const next=base[Math.floor(Math.random()*base.length)];
+    r.push(next);
+  }
+  return r;
+}
+
+/* ===== DOM ===== */
+const levelSel=document.getElementById("level");
+const rootsEl=document.getElementById("roots");
+const inputEl=document.getElementById("input");
+const timeEl=document.getElementById("time");
+const correctEl=document.getElementById("correct");
+const totalEl=document.getElementById("total");
+const accuracyEl=document.getElementById("accuracy");
+const avgEl=document.getElementById("avg");
+const wpmEl=document.getElementById("wpm");
+const progressBar=document.getElementById("progress-bar");
+
+/* ===== 狀態 ===== */
+let roots=[], index=0, startTime=null, animationFrame=null;
+let correctCount=0, totalAttempts=0;
+let finished=false;
+
+/* ===== 初始化關卡選單 ===== */
+Object.keys(levels).forEach(k=>{
+  const o=document.createElement("option");
+  o.textContent=o.value=k;
+  levelSel.appendChild(o);
+});
+
+/* ===== 渲染字根與進度條 ===== */
+function render(){
+  rootsEl.innerHTML="";
+  roots.forEach((r,i)=>{
+    const s=document.createElement("span");
+    s.textContent=r;
+    s.className="root";
+    if(i<index) s.classList.add("done");
+    if(i===index) s.classList.add("active");
+    rootsEl.appendChild(s);
+  });
+  const progress=((index)/roots.length)*100;
+  progressBar.style.width=(index>=roots.length?100:progress)+"%";
+}
+
+/* ===== 重置 ===== */
+function reset(){
+  audioCtx.resume();
+  finished=false;
+  roots=buildRoots(levels[levelSel.value]);
+  index=0; startTime=null;
+  cancelAnimationFrame(animationFrame);
+  correctCount=0; totalAttempts=0;
+  timeEl.textContent="0.0";
+  correctEl.textContent=correctCount;
+  totalEl.textContent=totalAttempts;
+  accuracyEl.textContent="0%";
+  avgEl.textContent="0";
+  wpmEl.textContent="0";
+  progressBar.style.width="0%";
+  inputEl.value="";
+  inputEl.classList.remove("error");
+  render();
+  inputEl.focus();
+
+  // ✅ 啟動計時循環
+  animationFrame = requestAnimationFrame(updateStats);
+}
+
+/* ===== 限制輸入一個字 ===== */
+let composing=false;
+inputEl.addEventListener("compositionstart",()=>composing=true);
+inputEl.addEventListener("compositionend",(e)=>{
+  composing=false;
+  checkInput(e.target.value.trim());
+  inputEl.value="";
+});
+inputEl.addEventListener("input",()=>{
+  if(!composing && inputEl.value.length>1) inputEl.value=inputEl.value.slice(-1);
+});
+
+/* ===== 驗證輸入 ===== */
+function checkInput(v){
+  if(!v || finished) return;
+  totalAttempts++;
+  if(!startTime) startTime=Date.now();
+
+  if(v===roots[index]){
+    correctCount++;
+    soundCorrect();
+    inputEl.classList.remove("error");
+    index++;
+    render();
+    if(index>=roots.length){
+      finished=true;
+      launchConfetti();
+      cancelAnimationFrame(animationFrame);
+      setTimeout(()=>{
+        const accPercent=((correctCount/totalAttempts)*100).toFixed(1);
+        const avgPerChar=(totalAttempts/roots.length).toFixed(2);
+        const elapsedMin=(Date.now()-startTime)/1000/60;
+        const wpmFinal=(correctCount/elapsedMin).toFixed(1);
+        alert(`🎉 恭喜完成打字練習！
+正確率：${correctCount}/${totalAttempts} (${accPercent}%)
+平均每字嘗試次數：${avgPerChar}
+打字速度 WPM：${wpmFinal}
+請舉手示意老師！`);
+      },300);
+    }
+  } else {
+    soundWrong();
+    inputEl.classList.add("error");
+    setTimeout(()=>inputEl.classList.remove("error"),150);
+  }
+
+  correctEl.textContent=correctCount;
+  totalEl.textContent=totalAttempts;
+  accuracyEl.textContent=((correctCount/totalAttempts)*100).toFixed(1)+"%";
+  avgEl.textContent=(totalAttempts/roots.length).toFixed(2);
+}
+
+/* ===== 空白鍵確認 ===== */
+inputEl.addEventListener("keydown",e=>{
+  if(!composing && e.key===" "){
+    e.preventDefault();
+    checkInput(inputEl.value.trim());
+    inputEl.value="";
+  }
+});
+
+/* ===== 計時與 WPM ===== */
+function updateStats(){
+  if(!startTime || finished){
+    animationFrame = requestAnimationFrame(updateStats); // 确保循环继续
+    return;
+  }
+  const elapsedSec=(Date.now()-startTime)/1000;
+  timeEl.textContent=elapsedSec.toFixed(1);
+  const wpm=(correctCount/(elapsedSec/60)).toFixed(1);
+  wpmEl.textContent=wpm;
+  animationFrame=requestAnimationFrame(updateStats);
+}
+
+/* ===== 關卡切換 & 重置 ===== */
+levelSel.onchange=reset;
+document.getElementById("restart").onclick=reset;
+
+/* ===== 初始化 ===== */
+reset();
+
+/* ===== Confetti 粒子效果（不变，可保持原有代码） ===== */
+
+
+/* ===== Confetti 粒子效果 ===== */
+const canvas=document.getElementById("confetti");
+const ctx=canvas.getContext("2d");
+let confettis=[];
+function resizeCanvas(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+window.addEventListener("resize",resizeCanvas);
+resizeCanvas();
+
+function createConfetti(){
+  confettis=[];
+  for(let i=0;i<150;i++){
+    confettis.push({
+      x:Math.random()*canvas.width,
+      y:Math.random()*canvas.height - canvas.height,
+      r:Math.random()*6+4,
+      d:Math.random()*20+10,
+      color:`hsl(${Math.random()*360},100%,50%)`,
+      tilt:Math.random()*10-10,
+      tiltAngleIncrement:Math.random()*0.07+0.05,
+      tiltAngle:0
+    });
+  }
+}
+
+function drawConfetti(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  confettis.forEach((c,i)=>{
+    ctx.beginPath();
+    ctx.lineWidth=c.r/2;
+    ctx.strokeStyle=c.color;
+    ctx.moveTo(c.x+c.tilt+ c.r/4, c.y);
+    ctx.lineTo(c.x+c.tilt, c.y+c.tilt+c.r/2);
+    ctx.stroke();
+    c.tiltAngle+=c.tiltAngleIncrement;
+    c.y+=(Math.cos(c.d)+3+c.r/2)/2;
+    c.x+=Math.sin(c.d);
+    c.tilt=Math.sin(c.tiltAngle)*15;
+    if(c.y>canvas.height){ confettis.splice(i,1); }
+  });
+  if(confettis.length>0) requestAnimationFrame(drawConfetti);
+}
+
+function launchConfetti(){ createConfetti(); drawConfetti(); }
+</script>
+</body>
+</html>
