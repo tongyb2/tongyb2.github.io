@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!typing html>
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
@@ -10,23 +10,25 @@ body {
   margin: 0; width: 100vw; height: 100vh;
   background: radial-gradient(circle at top, #0f172a, #020617);
   color: #e5e7eb;
-  display: flex; justify-content: center; align-items: center;
+  display: flex; justify-content: center; align-items: flex-start;
   overflow: hidden;
+  padding: 20px;
 }
 .container {
   display: flex; gap: 32px;
   flex-wrap: wrap; justify-content: center; align-items: flex-start;
-  padding: 20px;
 }
 .stage {
   background: rgba(15,23,42,0.95);
   border-radius: 24px;
   padding: 36px 48px;
   min-width: 520px;
+  max-height: 90vh;
   box-shadow: 0 20px 60px rgba(0,0,0,0.6);
   display: flex; flex-direction: column;
   align-items: center;
   transition: all 0.3s;
+  overflow-y: auto;
 }
 header { display: flex; gap: 16px; margin-bottom: 16px; }
 select, button {
@@ -42,16 +44,15 @@ button { background: linear-gradient(90deg,#38bdf8,#0ea5e9); color: #020617; fon
 button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(56,189,248,0.5); }
 
 .roots {
-  display: grid;
-  grid-template-columns: repeat(16, 1fr);
-  grid-auto-rows: 70px;
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
-  font-size: 2.5rem;
+  font-size: 2.8rem;
   margin-bottom: 20px;
-  justify-items: center;
-  align-items: center;
+  justify-content: flex-start;
+  max-width: 100%;
 }
-.root { opacity: 0.3; transition: all 0.3s; border-radius:8px; padding:4px; }
+.root { opacity: 0.3; transition: all 0.3s; border-radius:8px; padding:4px; width: 48px; height: 48px; display:flex; justify-content:center; align-items:center; }
 .root.active { opacity: 1; color: #38bdf8; text-shadow:0 0 12px #38bdf8; transform: scale(1.3); position: relative; }
 .root.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 3px; background: #38bdf8; animation: blink 1s infinite; }
 .root.done { opacity: 1; color: #4ade80; text-shadow:0 0 10px #4ade80; }
@@ -71,6 +72,7 @@ input::placeholder { color: #94a3b8; opacity: 1; }
 input:focus { box-shadow:0 0 15px #38bdf8; border-color:#60a5fa; }
 input.error { animation: shake 0.15s; border-color:#dc2626; box-shadow:0 0 10px #dc2626; }
 @keyframes shake { 0%{transform:translateX(0);}25%{transform:translateX(-5px);}50%{transform:translateX(5px);}75%{transform:translateX(-5px);}100%{transform:translateX(0);} }
+@keyframes blink { 0%,50%,100% {opacity:1;} 25%,75% {opacity:0;} }
 
 .info { margin-top:12px; font-size:1.1rem; display:flex; gap:20px; flex-wrap:wrap; justify-content:center; }
 .info span { font-weight:700; color:#38bdf8; }
@@ -79,8 +81,8 @@ input.error { animation: shake 0.15s; border-color:#dc2626; box-shadow:0 0 10px 
 .tips h3 { margin-top:0; color:#7dd3fc; }
 .tips li { margin-bottom:12px; line-height:1.5; }
 
-@media(max-width:1200px){ .roots { grid-template-columns: repeat(8, 1fr); } }
-@media(max-width:800px){ .roots { grid-template-columns: repeat(4, 1fr); } .stage{ min-width:320px; } .tips{ width:90%; } }
+@media(max-width:1200px){ .roots { font-size:2.2rem; gap:8px; } }
+@media(max-width:800px){ .roots { font-size:1.8rem; gap:6px; } .stage{ min-width:320px; } .tips{ width:90%; } }
 
 .confetti { pointer-events:none; position:fixed; top:0; left:0; width:100%; height:100%; overflow:hidden; z-index:9999; }
 
@@ -126,7 +128,7 @@ input.error { animation: shake 0.15s; border-color:#dc2626; box-shadow:0 0 10px 
 
     <div id="roots" class="roots"></div>
 
-    <input id="input" placeholder="輸入字根後按空白鍵" autocomplete="off">
+    <input id="input" placeholder="輸入字後按空白鍵" autocomplete="off">
 
     <div class="info">
       ⏱ 時長：<span id="time">0.0</span> 秒
@@ -170,22 +172,36 @@ function playTone(freq,dur,type,vol){
 const soundCorrect = ()=>playTone(880,.12,"triangle",.1);
 const soundWrong = ()=>playTone(220,.15,"square",.08);
 
-/* ===== 字根設定 ===== */
+/* ===== 字根及名字設定 ===== */
 const levels={
   "1. 哲理類":["日","月","金","木","水","火","土"],
   "2. 筆劃類":["竹","戈","十","大","中","一","弓"],
   "3. 人體類":["人","心","手","口"],
-  "4. 字形類":["尸","廿","山","女","田","卜"],
-  "5. 混合主題":["日","月","金","木","水","火","土","竹","戈","十","大","中","一","弓","人","心","手","口","尸","廿","山","女","田","卜"]
+  "4. 字形類":["尸","廿","山","女","田","卜"]
 };
+
+// 主題5 混合
+levels["5. 混合主題"] = levels["1. 哲理類"].concat(levels["2. 筆劃類"],levels["3. 人體類"],levels["4. 字形類"]);
+
+// 主題6-20 名字
+const nameTopics = [
+  ["曾思妍"],["劉棨匡"],["馮惠珊"],["洪振凱"],["蘇鈺婷"],
+  ["郁宇辰"],["王敏傑"],["黃正陽"],["陳致充"],["雷梓藍"],
+  ["陳俊宇"],["李曉鎣"],["劉沛恆"],["易政裕"],["蕭子揚"]
+];
+const levelNames={};
+nameTopics.forEach((arr,i)=>{
+  const idx = i+6;
+  levelNames[idx] = arr.map(n => n); // keep name
+});
+levelNames[21] = []; // 隨機名字抽8個
 
 /* ===== 工具 ===== */
 function shuffleArray(arr){ return arr.slice().sort(()=>Math.random()-0.5); }
 function buildRoots(base){
   const r=[];
   while(r.length<32){
-    const next=base[Math.floor(Math.random()*base.length)];
-    r.push(next);
+    r.push(base[Math.floor(Math.random()*base.length)]);
   }
   return r;
 }
@@ -208,7 +224,7 @@ let correctCount=0, totalAttempts=0;
 let finished=false;
 
 /* ===== 初始化關卡選單 ===== */
-Object.keys(levels).forEach(k=>{
+Object.keys(levels).concat(["6. 曾思妍","7. 劉棨匡","8. 馮惠珊","9. 洪振凱","10. 蘇鈺婷","11. 郁宇辰","12. 王敏傑","13. 黃正陽","14. 陳致充","15. 雷梓藍","16. 陳俊宇","17. 李曉鎣","18. 劉沛恆","19. 易政裕","20. 蕭子揚","21. 隨機名字"]).forEach(k=>{
   const o=document.createElement("option");
   o.textContent=o.value=k;
   levelSel.appendChild(o);
@@ -229,11 +245,51 @@ function render(){
   progressBar.style.width=(index>=roots.length?100:progress)+"%";
 }
 
+/* ===== 建立名字字根列表 ===== */
+function buildNameTopic(level){
+  let idx = parseInt(level.split(".")[0]);
+  let names = [];
+
+  if(idx >= 6 && idx <= 20){
+    if(idx === 6){
+      // 顯示5次「曾思妍」
+      names = Array(5).fill(levelNames[6][0]).join("").split("");
+    } else {
+      const prev = levelNames[idx-1][0].split("");
+      const prev2 = idx > 7 ? levelNames[idx-2][0].split("") : [];
+      const current = levelNames[idx][0].split("");
+      names = prev2.concat(prev, ...Array(5).fill(current).flat());
+    }
+  } else if(idx === 21){
+    // 隨機抽8個名字
+    let arr = [];
+    const keys = Object.keys(levelNames).filter(k => k >= 6 && k <= 20);
+    for(let i=0;i<8;i++){
+      const rand = keys[Math.floor(Math.random()*keys.length)];
+      arr.push(...levelNames[rand][0].split(""));
+    }
+    names = arr;
+  }
+
+  return names;
+}
+
 /* ===== 重置 ===== */
 function reset(){
   audioCtx.resume();
   finished=false;
-  roots=buildRoots(levels[levelSel.value]);
+  const level = levelSel.value;
+  const idx = parseInt(level.split(".")[0]);
+  if(idx<=5){
+    if(idx===5){
+      roots = buildRoots(levels[level]);
+    } else {
+      roots = buildRoots(levels[level]);
+    }
+  } else {
+    roots = buildNameTopic(level);
+  }
+
   index=0; startTime=null;
   cancelAnimationFrame(animationFrame);
   correctCount=0; totalAttempts=0;
@@ -249,7 +305,6 @@ function reset(){
   render();
   inputEl.focus();
 
-  // ✅ 啟動計時循環
   animationFrame = requestAnimationFrame(updateStats);
 }
 
@@ -281,17 +336,11 @@ function checkInput(v){
       finished=true;
       launchConfetti();
       cancelAnimationFrame(animationFrame);
-      setTimeout(()=>{
-        const accPercent=((correctCount/totalAttempts)*100).toFixed(1);
-        const avgPerChar=(totalAttempts/roots.length).toFixed(2);
-        const elapsedMin=(Date.now()-startTime)/1000/60;
-        const wpmFinal=(correctCount/elapsedMin).toFixed(1);
-        alert(`🎉 恭喜完成打字練習！
-正確率：${correctCount}/${totalAttempts} (${accPercent}%)
-平均每字嘗試次數：${avgPerChar}
-打字速度 WPM：${wpmFinal}
-請舉手示意老師！`);
-      },300);
+      setTimeout(()=>alert(`🎉 完成打字練習！
+正確率：${correctCount}/${totalAttempts} (${(correctCount/totalAttempts*100).toFixed(1)}%)
+平均每字嘗試次數：${(totalAttempts/roots.length).toFixed(2)}
+打字速度 WPM：${(correctCount/((Date.now()-startTime)/1000/60)).toFixed(1)}
+請舉手示意老師！`),300);
     }
   } else {
     soundWrong();
@@ -317,7 +366,7 @@ inputEl.addEventListener("keydown",e=>{
 /* ===== 計時與 WPM ===== */
 function updateStats(){
   if(!startTime || finished){
-    animationFrame = requestAnimationFrame(updateStats); // 确保循环继续
+    animationFrame = requestAnimationFrame(updateStats);
     return;
   }
   const elapsedSec=(Date.now()-startTime)/1000;
@@ -333,9 +382,6 @@ document.getElementById("restart").onclick=reset;
 
 /* ===== 初始化 ===== */
 reset();
-
-/* ===== Confetti 粒子效果（不变，可保持原有代码） ===== */
-
 
 /* ===== Confetti 粒子效果 ===== */
 const canvas=document.getElementById("confetti");
@@ -379,7 +425,11 @@ function drawConfetti(){
   if(confettis.length>0) requestAnimationFrame(drawConfetti);
 }
 
-function launchConfetti(){ createConfetti(); drawConfetti(); }
+function launchConfetti(){
+  createConfetti();
+  drawConfetti();
+}
 </script>
+
 </body>
 </html>
